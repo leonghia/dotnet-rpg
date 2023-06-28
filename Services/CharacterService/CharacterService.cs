@@ -7,12 +7,6 @@ namespace dotnet_rpg.Services.CharacterService;
 
 public class CharacterService : ICharacterService
 {
-
-    private static List<Character> characters = new List<Character> {
-        new Character(),
-        new Character { Id = 1, Name = "Sam" }
-    };
-
     private readonly IMapper _mapper;
     private readonly DataContext _context;
 
@@ -38,9 +32,10 @@ public class CharacterService : ICharacterService
         var response = new ServiceResponse<List<GetCharacterDto>>();
         try
         {
-            Character character = characters.First(c => c.Id == id);
-            characters.Remove(character);
-            response.Data = characters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
+            Character character = await _context.Characters.FirstAsync(c => c.Id == id);
+            _context.Characters.Remove(character);
+            await _context.SaveChangesAsync();
+            response.Data = await _context.Characters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToListAsync();
         }
         catch (Exception ex)
         {
@@ -86,9 +81,20 @@ public class CharacterService : ICharacterService
         
         try
         {
-            Character? character = characters.FirstOrDefault(c => c.Id == updateCharacter.Id);
+            var character = await _context.Characters.FirstOrDefaultAsync(c => c.Id == updateCharacter.Id);
 
+
+            /* 
+             * If character is null (due to Id not found from the code line above)
+             * then the mapper would just return the "updateCharacter",
+             * otherwise, the "character" after updating would be returned
+             */
             _mapper.Map(updateCharacter, character);
+
+
+            /*
+             * The mapper above could be done manually like below
+             */
             // character.Class = updateCharacter.Class;
             // character.Defense = updateCharacter.Defense;
             // character.HitPoints = updateCharacter.HitPoints;
@@ -96,8 +102,10 @@ public class CharacterService : ICharacterService
             // character.Name = updateCharacter.Name;
             // character.Strength = updateCharacter.Strength;
 
+            await _context.SaveChangesAsync();
+
             response.Data = _mapper.Map<GetCharacterDto>(character);
-            response.Message = "Your character has been successfully updated";
+            
         }
         catch (Exception ex)
         {
