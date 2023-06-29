@@ -45,13 +45,13 @@ public class CharacterService : ICharacterService
         return response;
     }
 
-    public async Task<ServiceResponse<List<GetCharacterDto>>> GetAllCharacters()
+    public async Task<ServiceResponse<List<GetCharacterDto>>> GetAllCharacters(int userId)
     {
         // Initialize the service response
         var response = new ServiceResponse<List<GetCharacterDto>>();
 
         // Grab the characters from the database via context
-        var dbCharacters = await _context.Characters.ToListAsync();
+        var dbCharacters = await _context.Characters.Where(c => c.User.Id == userId).ToListAsync();
 
         // Automap from type Character to type GetCharacterDto
         response.Data = dbCharacters.Select(c => _mapper.Map<GetCharacterDto>(c)).ToList();
